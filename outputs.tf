@@ -84,4 +84,30 @@ output "sqs_queue_arns" {
 output "sqs_queue_names" {
   description = "생성된 SQS 큐 이름 목록"
   value       = var.create_sqs && length(var.sqs_queues) > 0 ? [for q in module.sqs : q.queue_name] : []
+}
+
+# Bastion 서버 출력 (조건부)
+output "bastion_id" {
+  description = "Bastion 서버 인스턴스 ID"
+  value       = var.create_bastion ? module.bastion[0].bastion_id : null
+}
+
+output "bastion_public_ip" {
+  description = "Bastion 서버 퍼블릭 IP (EIP가 없는 경우)"
+  value       = var.create_bastion ? module.bastion[0].bastion_public_ip : null
+}
+
+output "bastion_elastic_ip" {
+  description = "Bastion 서버에 할당된 Elastic IP (있는 경우)"
+  value       = var.create_bastion && var.bastion_create_eip ? module.bastion[0].bastion_elastic_ip : null
+}
+
+output "bastion_private_ip" {
+  description = "Bastion 서버 프라이빗 IP"
+  value       = var.create_bastion ? module.bastion[0].bastion_private_ip : null
+}
+
+output "bastion_ssh_command" {
+  description = "Bastion 서버 SSH 접속 명령어"
+  value       = var.create_bastion ? module.bastion[0].ssh_command : null
 } 

@@ -13,6 +13,7 @@
 - **IAM 권한**: 백엔드 개발자를 위한 권한 관리
 - **EKS 클러스터**: EC2 3개 노드 기반 쿠버네티스 클러스터
 - **SQS 큐**: 메시지 큐 서비스 (FIFO 및 표준 큐 지원)
+- **Bastion 서버**: 프라이빗 리소스 접근용 EC2 인스턴스 (SSH 터널링 지원)
 
 ## 모듈 구조
 
@@ -22,6 +23,7 @@
 - **IAM 모듈** (`modules/iam`): IAM 정책, 그룹, 사용자 관리
 - **EKS 모듈** (`modules/eks`): Kubernetes 클러스터 및 노드 그룹 관리
 - **SQS 모듈** (`modules/sqs`): 메시지 큐 서비스 관리
+- **Bastion 모듈** (`modules/bastion`): 프라이빗 리소스 접근용 Bastion 서버 관리
 
 ## 환경별 설정
 
@@ -31,11 +33,13 @@
   - 2개의 가용 영역 사용
   - EKS는 t3.medium 인스턴스 3개 사용
   - SQS는 backend-tasks(표준) 및 notification-events(FIFO) 큐 제공
+  - Bastion 서버는 t3.micro 인스턴스 사용 (누구나 SSH 접속 가능)
 - **테스트 환경** (`test.tfvars`): 2개의 가용 영역 사용
 - **프로덕션 환경** (`prod.tfvars`): 
   - 4개의 가용 영역 사용 
   - EKS는 t3.large 인스턴스 3개 사용 (최대 10개까지 확장 가능)
   - SQS는 backend-tasks(표준), notification-events(FIFO), audit-logs(표준) 큐 제공
+  - Bastion 서버는 t3.micro 인스턴스 사용 (특정 IP에서만 SSH 접속 가능)
 
 ## 사용 방법
 
@@ -99,6 +103,41 @@ terraform destroy -var-file="prod.tfvars"
 aws eks update-kubeconfig --name kaye-dev-cluster --region ap-northeast-2
 ```
 
+## Bastion 서버 사용 방법
+
+Bastion 서버는 다음과 같은 용도로 사용할 수 있습니다:
+
+### SSH 접속
+
+```bash
+# 인프라 배포 후 출력된 명령어 사용
+ssh -i ~/.ssh/your-private-key.pem ec2-user@<bastion-public-ip>
+```
+
+### 프라이빗 리소스 접근을 위한 SSH 터널링
+
+```bash
+# EKS 클러스터 API 서버 접근 (로컬 포트 8443을 클러스터 API 서버 포트 443으로 포워딩)
+ssh -i ~/.ssh/your-private-key.pem -L 8443:<eks-cluster-endpoint>:443 ec2-user@<bastion-public-ip>
+
+# 프라이빗 서브넷 내 데이터베이스 접근
+ssh -i ~/.ssh/your-private-key.pem -L 5432:<db-private-ip>:5432 ec2-user@<bastion-public-ip>
+```
+
+### 데이터베이스 접근 예시
+
+Bastion 서버를 통해 프라이빗 서브넷에 있는 데이터베이스에 접근하는 방법:
+
+1. SSH 터널 설정:
+```bash
+ssh -i ~/.ssh/your-private-key.pem -L 5432:<db-private-ip>:5432 ec2-user@<bastion-public-ip>
+```
+
+2. 로컬에서 데이터베이스 클라이언트로 연결:
+```bash
+psql -h localhost -p 5432 -U username -d dbname
+```
+
 ## SQS 큐 사용 방법
 
 AWS SQS 큐는 다음과 같이 사용할 수 있습니다:
@@ -160,3 +199,4 @@ aws sqs delete-message \
 - `public_subnet_cidrs`: 퍼블릭 서브넷 CIDR 블록 목록
 - `private_subnet_cidrs`: 프라이빗 서브넷 CIDR 블록 목록
 - `sqs_queues`: SQS 큐 설정
+- `bastion_allowed_ssh_cidr_blocks`: Bastion 서버 SSH 접속 허용 IP 범위

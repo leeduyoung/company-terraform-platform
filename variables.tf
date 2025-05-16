@@ -106,4 +106,53 @@ variable "sqs_queues" {
     max_receive_count          = number
   }))
   default = []
+}
+
+# Bastion 서버 관련 변수
+variable "create_bastion" {
+  description = "Bastion 서버 생성 여부"
+  type        = bool
+  default     = false
+}
+
+variable "bastion_instance_type" {
+  description = "Bastion 서버 인스턴스 타입"
+  type        = string
+  default     = "t3.micro"
+}
+
+variable "bastion_volume_size" {
+  description = "Bastion 서버 디스크 크기(GB)"
+  type        = number
+  default     = 8
+}
+
+variable "bastion_create_eip" {
+  description = "Bastion 서버에 Elastic IP 할당 여부"
+  type        = bool
+  default     = true
+}
+
+variable "bastion_key_name" {
+  description = "Bastion 서버에 사용할 기존 키 페어 이름"
+  type        = string
+  default     = ""
+}
+
+variable "bastion_create_key_pair" {
+  description = "Bastion 서버 키 페어 생성 여부"
+  type        = bool
+  default     = false
+}
+
+variable "bastion_ssh_public_key" {
+  description = "Bastion 서버에 사용할 SSH 공개 키"
+  type        = string
+  default     = ""
+}
+
+variable "bastion_allowed_ssh_cidr_blocks" {
+  description = "Bastion 서버 SSH 접속을 허용할 CIDR 블록 목록"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
 } 
