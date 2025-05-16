@@ -15,6 +15,7 @@
 - **SQS 큐**: 메시지 큐 서비스 (FIFO 및 표준 큐 지원)
 - **Bastion 서버**: 프라이빗 리소스 접근용 EC2 인스턴스 (SSH 터널링 지원)
 - **RDS 인스턴스**: 관계형 데이터베이스 서비스 (PostgreSQL, MySQL 지원)
+- **SSH 키 페어**: 환경별로 구분된 EC2 인스턴스 접속용 키 페어
 
 ## 모듈 구조
 
@@ -26,6 +27,7 @@
 - **SQS 모듈** (`modules/sqs`): 메시지 큐 서비스 관리
 - **Bastion 모듈** (`modules/bastion`): 프라이빗 리소스 접근용 Bastion 서버 관리
 - **RDS 모듈** (`modules/rds`): 관계형 데이터베이스 서비스 관리
+- **키 페어 모듈** (`modules/keypair`): SSH 접속용 키 페어 관리
 
 ## 환경별 설정
 
@@ -238,6 +240,31 @@ aws sqs delete-message \
 - `availability_zones`: 가용 영역 목록
 - `public_subnet_cidrs`: 퍼블릭 서브넷 CIDR 블록 목록
 - `private_subnet_cidrs`: 프라이빗 서브넷 CIDR 블록 목록
+- `key_pairs`: SSH 키 페어 설정 (이름 및 공개키)
 - `sqs_queues`: SQS 큐 설정
 - `bastion_allowed_ssh_cidr_blocks`: Bastion 서버 SSH 접속 허용 IP 범위
 - `rds_instances`: RDS 인스턴스 설정
+
+## 키 페어 관리
+
+SSH 키 페어는 Bastion 서버와 EKS 노드에 접속하기 위해 사용됩니다.
+
+### 키 페어 설정
+
+각 환경에 맞는 키 페어가 자동으로 생성되며, 환경별로 다음과 같이 구성됩니다:
+
+- **개발 환경**: `kaye-dev-key` (Bastion 서버와 EKS 노드에 동일하게 사용)
+- **프로덕션 환경**: `kaye-prod-key` (Bastion 서버와 EKS 노드에 동일하게 사용)
+
+### 개인 키 보안
+
+Terraform은 자동으로 공개 키를 AWS에 업로드하지만, 개인 키는 사용자가 안전하게 보관해야 합니다.
+환경별로 올바른 개인 키를 사용하여 인스턴스에 접속하세요.
+
+```bash
+# 개발 환경의 Bastion 서버 접속
+ssh -i ~/.ssh/kaye-dev-key.pem ec2-user@<bastion-public-ip>
+
+# 프로덕션 환경의 Bastion 서버 접속
+ssh -i ~/.ssh/kaye-prod-key.pem ec2-user@<bastion-public-ip>
+```

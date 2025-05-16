@@ -12,6 +12,18 @@ provider "aws" {
   region = var.aws_region
 }
 
+# 키 페어 모듈 호출 (조건부)
+module "keypair" {
+  source   = "./modules/keypair"
+  count    = var.create_key_pairs && length(var.key_pairs) > 0 ? length(var.key_pairs) : 0
+  
+  project_name = var.project_name
+  environment  = var.environment
+  create       = true
+  key_name     = var.key_pairs[count.index].name
+  public_key   = var.key_pairs[count.index].public_key
+}
+
 # 네트워크 모듈 호출
 module "network" {
   source = "./modules/network"
@@ -46,6 +58,8 @@ module "eks" {
   node_desired_size  = var.eks_node_desired_size
   node_min_size      = var.eks_node_min_size
   node_max_size      = var.eks_node_max_size
+  # 키페어 모듈에서 생성한 키 사용 (생성한 경우) 또는 지정된 키 사용
+  key_name           = var.create_key_pairs && length(var.key_pairs) > 0 ? module.keypair[0].key_pair_name : var.eks_key_name
 }
 
 # SQS 모듈 호출 (조건부)
@@ -80,9 +94,8 @@ module "bastion" {
   instance_type          = var.bastion_instance_type
   volume_size            = var.bastion_volume_size
   create_eip             = var.bastion_create_eip
-  create_key_pair        = var.bastion_create_key_pair
-  key_name               = var.bastion_key_name
-  ssh_public_key         = var.bastion_ssh_public_key
+  # 키페어 모듈에서 생성한 키 사용 (생성한 경우) 또는 지정된 키 사용
+  key_name               = var.create_key_pairs && length(var.key_pairs) > 0 ? module.keypair[0].key_pair_name : var.bastion_key_name
   allowed_ssh_cidr_blocks = var.bastion_allowed_ssh_cidr_blocks
 }
 

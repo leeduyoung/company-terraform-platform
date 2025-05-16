@@ -47,4 +47,10 @@ variable "node_max_size" {
   description = "노드 그룹의 최대 노드 수"
   type        = number
   default     = 5
+}
+
+variable "key_name" {
+  description = "EKS 워커 노드에 사용할 키페어 이름"
+  type        = string
+  default     = ""
 } 

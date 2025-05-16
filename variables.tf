@@ -16,6 +16,22 @@ variable "aws_region" {
   default     = "ap-northeast-2"
 }
 
+# 키 페어 관련 변수
+variable "create_key_pairs" {
+  description = "키 페어 생성 여부"
+  type        = bool
+  default     = false
+}
+
+variable "key_pairs" {
+  description = "생성할 키 페어 목록"
+  type = list(object({
+    name       = string
+    public_key = string
+  }))
+  default = []
+}
+
 variable "vpc_cidr" {
   description = "VPC CIDR 블록"
   type        = string
@@ -83,6 +99,12 @@ variable "eks_node_max_size" {
   default     = 5
 }
 
+variable "eks_key_name" {
+  description = "EKS 워커 노드에 사용할 키페어 이름"
+  type        = string
+  default     = ""
+}
+
 # SQS 관련 변수
 variable "create_sqs" {
   description = "SQS 큐 생성 여부"
@@ -135,18 +157,6 @@ variable "bastion_create_eip" {
 
 variable "bastion_key_name" {
   description = "Bastion 서버에 사용할 기존 키 페어 이름"
-  type        = string
-  default     = ""
-}
-
-variable "bastion_create_key_pair" {
-  description = "Bastion 서버 키 페어 생성 여부"
-  type        = bool
-  default     = false
-}
-
-variable "bastion_ssh_public_key" {
-  description = "Bastion 서버에 사용할 SSH 공개 키"
   type        = string
   default     = ""
 }

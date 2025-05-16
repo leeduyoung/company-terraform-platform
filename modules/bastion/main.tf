@@ -28,23 +28,11 @@ resource "aws_security_group" "bastion" {
   }
 }
 
-# Bastion 서버용 키 페어 (선택적)
-resource "aws_key_pair" "bastion" {
-  count      = var.create_key_pair ? 1 : 0
-  key_name   = "${var.project_name}-${var.environment}-bastion-key"
-  public_key = var.ssh_public_key
-
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-bastion-key"
-    Environment = var.environment
-  }
-}
-
 # Bastion 서버 EC2 인스턴스
 resource "aws_instance" "bastion" {
   ami                    = var.ami_id != "" ? var.ami_id : data.aws_ami.amazon_linux_2.id
   instance_type          = var.instance_type
-  key_name               = var.create_key_pair ? aws_key_pair.bastion[0].key_name : var.key_name
+  key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.bastion.id]
   subnet_id              = var.subnet_id
   associate_public_ip_address = true

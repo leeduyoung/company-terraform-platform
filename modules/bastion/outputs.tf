@@ -1,16 +1,16 @@
 output "bastion_id" {
-  description = "Bastion 서버 인스턴스 ID"
+  description = "Bastion 서버 EC2 인스턴스 ID"
   value       = aws_instance.bastion.id
 }
 
-output "bastion_public_ip" {
-  description = "Bastion 서버 퍼블릭 IP (EIP가 없는 경우)"
-  value       = aws_instance.bastion.public_ip
+output "bastion_security_group_id" {
+  description = "Bastion 서버 보안 그룹 ID"
+  value       = aws_security_group.bastion.id
 }
 
-output "bastion_elastic_ip" {
-  description = "Bastion 서버에 할당된 Elastic IP (있는 경우)"
-  value       = var.create_eip ? aws_eip.bastion[0].public_ip : null
+output "public_ip" {
+  description = "Bastion 서버 퍼블릭 IP"
+  value       = var.create_eip ? aws_eip.bastion[0].public_ip : aws_instance.bastion.public_ip
 }
 
 output "bastion_private_ip" {
@@ -18,9 +18,9 @@ output "bastion_private_ip" {
   value       = aws_instance.bastion.private_ip
 }
 
-output "bastion_security_group_id" {
-  description = "Bastion 서버 보안 그룹 ID"
-  value       = aws_security_group.bastion.id
+output "bastion_elastic_ip" {
+  description = "Bastion 서버에 할당된 Elastic IP (있는 경우)"
+  value       = var.create_eip ? aws_eip.bastion[0].public_ip : null
 }
 
 output "ssh_command" {

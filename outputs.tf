@@ -56,8 +56,13 @@ output "eks_cluster_id" {
 }
 
 output "eks_cluster_endpoint" {
-  description = "EKS 클러스터 엔드포인트"
+  description = "EKS 클러스터 API 서버 엔드포인트"
   value       = var.create_eks ? module.eks[0].cluster_endpoint : null
+}
+
+output "eks_cluster_name" {
+  description = "EKS 클러스터 이름"
+  value       = var.create_eks ? module.eks[0].cluster_name : null
 }
 
 output "eks_node_group_id" {
@@ -65,20 +70,20 @@ output "eks_node_group_id" {
   value       = var.create_eks ? module.eks[0].node_group_id : null
 }
 
-output "kubectl_config_command" {
-  description = "kubectl 구성을 위한 AWS CLI 명령어"
-  value       = var.create_eks ? module.eks[0].kubectl_config_command : null
+output "eks_kubeconfig_command" {
+  description = "kubectl 구성 명령어"
+  value       = var.create_eks ? "aws eks update-kubeconfig --name ${module.eks[0].cluster_name} --region ${var.aws_region}" : null
 }
 
 # SQS 출력 (조건부)
 output "sqs_queue_urls" {
   description = "생성된 SQS 큐 URL 목록"
-  value       = var.create_sqs && length(var.sqs_queues) > 0 ? [for q in module.sqs : q.queue_url] : []
+  value       = var.create_sqs && length(var.sqs_queues) > 0 ? [for i in range(length(var.sqs_queues)) : module.sqs[i].queue_url] : []
 }
 
 output "sqs_queue_arns" {
   description = "생성된 SQS 큐 ARN 목록"
-  value       = var.create_sqs && length(var.sqs_queues) > 0 ? [for q in module.sqs : q.queue_arn] : []
+  value       = var.create_sqs && length(var.sqs_queues) > 0 ? [for i in range(length(var.sqs_queues)) : module.sqs[i].queue_arn] : []
 }
 
 output "sqs_queue_names" {
@@ -93,8 +98,8 @@ output "bastion_id" {
 }
 
 output "bastion_public_ip" {
-  description = "Bastion 서버 퍼블릭 IP (EIP가 없는 경우)"
-  value       = var.create_bastion ? module.bastion[0].bastion_public_ip : null
+  description = "Bastion 서버 퍼블릭 IP"
+  value       = var.create_bastion ? module.bastion[0].public_ip : null
 }
 
 output "bastion_elastic_ip" {
@@ -109,13 +114,13 @@ output "bastion_private_ip" {
 
 output "bastion_ssh_command" {
   description = "Bastion 서버 SSH 접속 명령어"
-  value       = var.create_bastion ? module.bastion[0].ssh_command : null
+  value       = var.create_bastion ? "ssh -i ~/.ssh/${var.create_key_pairs ? module.keypair[0].key_pair_name : var.bastion_key_name}.pem ec2-user@${module.bastion[0].public_ip}" : null
 }
 
 # RDS 출력 (조건부)
 output "rds_instance_endpoints" {
-  description = "RDS 인스턴스 엔드포인트 목록"
-  value       = var.create_rds && length(var.rds_instances) > 0 ? [for db in module.rds : db.db_instance_endpoint] : []
+  description = "생성된 RDS 인스턴스 엔드포인트 목록"
+  value       = var.create_rds && length(var.rds_instances) > 0 ? [for i in range(length(var.rds_instances)) : module.rds[i].db_instance_endpoint] : []
 }
 
 output "rds_instance_addresses" {
@@ -139,6 +144,20 @@ output "rds_jdbc_connection_strings" {
 }
 
 output "rds_connection_commands" {
-  description = "RDS 연결 명령어 목록"
-  value       = var.create_rds && length(var.rds_instances) > 0 ? [for db in module.rds : db.connection_command] : []
+  description = "RDS 연결 명령어 (Bastion 서버를 통한 터널링)"
+  value       = var.create_rds && length(var.rds_instances) > 0 && var.create_bastion ? [
+    for i in range(length(var.rds_instances)) : 
+      "SSH 터널링: ssh -i ~/.ssh/${var.create_key_pairs ? module.keypair[0].key_pair_name : var.bastion_key_name}.pem -L ${var.rds_instances[i].port}:${module.rds[i].db_instance_endpoint}:${var.rds_instances[i].port} ec2-user@${module.bastion[0].public_ip}"
+  ] : []
+}
+
+# 키 페어 관련 출력
+output "key_pair_name" {
+  description = "생성된 키 페어 이름"
+  value       = var.create_key_pairs && length(var.key_pairs) > 0 ? module.keypair[0].key_pair_name : "키 페어가 생성되지 않음"
+}
+
+output "key_pair_fingerprint" {
+  description = "생성된 키 페어의 지문 (fingerprint)"
+  value       = var.create_key_pairs && length(var.key_pairs) > 0 ? module.keypair[0].key_pair_fingerprint : null
 } 

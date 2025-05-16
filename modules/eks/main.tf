@@ -153,6 +153,12 @@ resource "aws_eks_node_group" "main" {
   subnet_ids      = var.subnet_ids
   instance_types  = [var.node_instance_type]
   disk_size       = var.node_disk_size
+  
+  # 원격 액세스 설정 - 미리 생성된 키 페어만 사용하도록 수정
+  remote_access {
+    ec2_ssh_key = var.key_name
+    source_security_group_ids = []
+  }
 
   scaling_config {
     desired_size = var.node_desired_size
