@@ -11,6 +11,8 @@
 - **라우팅 테이블**: 퍼블릭 RT, 프라이빗 RT로 구분 운영
 - **NAT Gateway**: 비용 고려하여 1개만 사용 (첫 번째 퍼블릭 서브넷에 위치)
 - **IAM 권한**: 백엔드 개발자를 위한 권한 관리
+- **EKS 클러스터**: EC2 3개 노드 기반 쿠버네티스 클러스터
+- **SQS 큐**: 메시지 큐 서비스 (FIFO 및 표준 큐 지원)
 
 ## 모듈 구조
 
@@ -18,14 +20,22 @@
 
 - **네트워크 모듈** (`modules/network`): VPC, 서브넷, 게이트웨이, 라우팅 테이블 관리
 - **IAM 모듈** (`modules/iam`): IAM 정책, 그룹, 사용자 관리
+- **EKS 모듈** (`modules/eks`): Kubernetes 클러스터 및 노드 그룹 관리
+- **SQS 모듈** (`modules/sqs`): 메시지 큐 서비스 관리
 
 ## 환경별 설정
 
 이 프로젝트는 다음과 같은 환경을 지원합니다:
 
-- **개발 환경** (`dev.tfvars`): 2개의 가용 영역만 사용
-- **테스트 환경** (`test.tfvars`): 2개의 가용 영역만 사용
-- **프로덕션 환경** (`prod.tfvars`): 4개의 가용 영역 모두 사용
+- **개발 환경** (`dev.tfvars`): 
+  - 2개의 가용 영역 사용
+  - EKS는 t3.medium 인스턴스 3개 사용
+  - SQS는 backend-tasks(표준) 및 notification-events(FIFO) 큐 제공
+- **테스트 환경** (`test.tfvars`): 2개의 가용 영역 사용
+- **프로덕션 환경** (`prod.tfvars`): 
+  - 4개의 가용 영역 사용 
+  - EKS는 t3.large 인스턴스 3개 사용 (최대 10개까지 확장 가능)
+  - SQS는 backend-tasks(표준), notification-events(FIFO), audit-logs(표준) 큐 제공
 
 ## 사용 방법
 
@@ -33,6 +43,7 @@
 
 - Terraform v1.2.0 이상
 - AWS CLI 구성 완료
+- kubectl (EKS 클러스터 관리 시 필요)
 
 ### 초기화
 
@@ -79,6 +90,59 @@ terraform destroy -var-file="test.tfvars"
 terraform destroy -var-file="prod.tfvars"
 ```
 
+### kubectl 구성 (EKS 클러스터 배포 후)
+
+배포가 완료되면 출력에 표시되는 명령어를 사용하여 kubectl을 구성할 수 있습니다:
+
+```bash
+# 예시
+aws eks update-kubeconfig --name kaye-dev-cluster --region ap-northeast-2
+```
+
+## SQS 큐 사용 방법
+
+AWS SQS 큐는 다음과 같이 사용할 수 있습니다:
+
+### 메시지 전송
+
+```bash
+# 표준 큐에 메시지 전송
+aws sqs send-message \
+  --queue-url https://sqs.ap-northeast-2.amazonaws.com/123456789012/kaye-dev-backend-tasks \
+  --message-body '{"task": "process_data", "data": {"id": 123}}' \
+  --region ap-northeast-2
+
+# FIFO 큐에 메시지 전송 (MessageGroupId 필수)
+aws sqs send-message \
+  --queue-url https://sqs.ap-northeast-2.amazonaws.com/123456789012/kaye-dev-notification-events.fifo \
+  --message-body '{"event": "user_signup", "data": {"user_id": 456}}' \
+  --message-group-id "user_events" \
+  --message-deduplication-id "$(date +%s)" \
+  --region ap-northeast-2
+```
+
+### 메시지 수신
+
+```bash
+# 큐에서 메시지 수신
+aws sqs receive-message \
+  --queue-url https://sqs.ap-northeast-2.amazonaws.com/123456789012/kaye-dev-backend-tasks \
+  --max-number-of-messages 10 \
+  --visibility-timeout 30 \
+  --wait-time-seconds 20 \
+  --region ap-northeast-2
+```
+
+### 메시지 삭제
+
+```bash
+# 메시지 수신 후 삭제
+aws sqs delete-message \
+  --queue-url https://sqs.ap-northeast-2.amazonaws.com/123456789012/kaye-dev-backend-tasks \
+  --receipt-handle "수신한 메시지의 receipt-handle 값" \
+  --region ap-northeast-2
+```
+
 ## 주요 파일
 
 - `main.tf`: 메인 인프라 구성 정의
@@ -95,3 +159,4 @@ terraform destroy -var-file="prod.tfvars"
 - `availability_zones`: 가용 영역 목록
 - `public_subnet_cidrs`: 퍼블릭 서브넷 CIDR 블록 목록
 - `private_subnet_cidrs`: 프라이빗 서브넷 CIDR 블록 목록
+- `sqs_queues`: SQS 큐 설정

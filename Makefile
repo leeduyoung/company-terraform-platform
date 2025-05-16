@@ -1,4 +1,4 @@
-.PHONY: init fmt validate clean
+.PHONY: init fmt validate clean eks-config
 
 # 기본 변수 설정
 ENV ?= dev
@@ -65,6 +65,14 @@ destroy-test:
 destroy-prod: 
 	$(MAKE) destroy ENV=prod
 
+# kubectl 구성 (EKS 배포 후)
+eks-config:
+	$(eval KUBECTL_CMD := $(shell terraform output -raw kubectl_config_command))
+	@echo "Configuring kubectl: $(KUBECTL_CMD)"
+	@$(KUBECTL_CMD)
+	@kubectl get nodes
+	@echo "EKS cluster configuration complete!"
+
 # 캐시 및 임시 파일 정리
 clean:
 	rm -rf .terraform
@@ -91,6 +99,7 @@ help:
 	@echo "  make destroy-test       - 테스트 환경 인프라 삭제"
 	@echo "  make destroy-prod       - 프로덕션 환경 인프라 삭제"
 	@echo "  make destroy-auto       - 기본 환경 자동 승인으로 삭제 (주의)"
+	@echo "  make eks-config         - kubectl 구성 (EKS 배포 후)"
 	@echo "  make clean              - 캐시 및 임시 파일 정리"
 	@echo "  make help               - 도움말 표시"
 

@@ -38,4 +38,72 @@ variable "private_subnet_cidrs" {
   description = "프라이빗 서브넷 CIDR 블록 목록"
   type        = list(string)
   default     = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24", "10.0.104.0/24"]
+}
+
+# EKS 관련 변수
+variable "create_eks" {
+  description = "EKS 클러스터 생성 여부"
+  type        = bool
+  default     = false
+}
+
+variable "kubernetes_version" {
+  description = "사용할 Kubernetes 버전"
+  type        = string
+  default     = "1.31"
+}
+
+variable "eks_node_instance_type" {
+  description = "EKS 노드 인스턴스 타입"
+  type        = string
+  default     = "t3.medium"
+}
+
+variable "eks_node_disk_size" {
+  description = "EKS 노드 디스크 크기(GB)"
+  type        = number
+  default     = 20
+}
+
+variable "eks_node_desired_size" {
+  description = "EKS 노드 그룹의 원하는 노드 수"
+  type        = number
+  default     = 3
+}
+
+variable "eks_node_min_size" {
+  description = "EKS 노드 그룹의 최소 노드 수"
+  type        = number
+  default     = 3
+}
+
+variable "eks_node_max_size" {
+  description = "EKS 노드 그룹의 최대 노드 수"
+  type        = number
+  default     = 5
+}
+
+# SQS 관련 변수
+variable "create_sqs" {
+  description = "SQS 큐 생성 여부"
+  type        = bool
+  default     = false
+}
+
+variable "sqs_queues" {
+  description = "생성할 SQS 큐 목록"
+  type = list(object({
+    name                       = string
+    fifo_queue                 = bool
+    content_based_deduplication = bool
+    delay_seconds              = number
+    max_message_size           = number
+    message_retention_seconds  = number
+    receive_wait_time_seconds  = number
+    visibility_timeout_seconds = number
+    create_queue_policy        = bool
+    dead_letter_queue_arn      = string
+    max_receive_count          = number
+  }))
+  default = []
 } 
