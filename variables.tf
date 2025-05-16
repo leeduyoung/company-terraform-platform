@@ -155,4 +155,42 @@ variable "bastion_allowed_ssh_cidr_blocks" {
   description = "Bastion 서버 SSH 접속을 허용할 CIDR 블록 목록"
   type        = list(string)
   default     = ["0.0.0.0/0"]
+}
+
+# RDS 관련 변수
+variable "create_rds" {
+  description = "RDS 인스턴스 생성 여부"
+  type        = bool
+  default     = false
+}
+
+variable "rds_instances" {
+  description = "생성할 RDS 인스턴스 목록"
+  type = list(object({
+    identifier               = string
+    engine                   = string
+    engine_version           = string
+    instance_class           = string
+    allocated_storage        = number
+    max_allocated_storage    = number
+    storage_type             = string
+    storage_encrypted        = bool
+    db_name                  = string
+    username                 = string
+    password                 = string
+    port                     = number
+    multi_az                 = bool
+    publicly_accessible      = bool
+    allowed_security_groups  = list(string)
+    allowed_cidr_blocks      = list(string)
+    create_parameter_group   = bool
+    parameter_group_family   = string
+    parameters               = list(map(string))
+    backup_retention_period  = number
+    skip_final_snapshot      = bool
+    deletion_protection      = bool
+    performance_insights_enabled = bool
+    enabled_cloudwatch_logs_exports = list(string)
+  }))
+  default = []
 } 

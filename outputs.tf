@@ -110,4 +110,35 @@ output "bastion_private_ip" {
 output "bastion_ssh_command" {
   description = "Bastion 서버 SSH 접속 명령어"
   value       = var.create_bastion ? module.bastion[0].ssh_command : null
+}
+
+# RDS 출력 (조건부)
+output "rds_instance_endpoints" {
+  description = "RDS 인스턴스 엔드포인트 목록"
+  value       = var.create_rds && length(var.rds_instances) > 0 ? [for db in module.rds : db.db_instance_endpoint] : []
+}
+
+output "rds_instance_addresses" {
+  description = "RDS 인스턴스 주소 목록"
+  value       = var.create_rds && length(var.rds_instances) > 0 ? [for db in module.rds : db.db_instance_address] : []
+}
+
+output "rds_instance_ids" {
+  description = "RDS 인스턴스 ID 목록"
+  value       = var.create_rds && length(var.rds_instances) > 0 ? [for db in module.rds : db.db_instance_id] : []
+}
+
+output "rds_instance_names" {
+  description = "RDS 데이터베이스 이름 목록"
+  value       = var.create_rds && length(var.rds_instances) > 0 ? [for db in module.rds : db.db_instance_name] : []
+}
+
+output "rds_jdbc_connection_strings" {
+  description = "RDS JDBC 연결 문자열 목록"
+  value       = var.create_rds && length(var.rds_instances) > 0 ? [for db in module.rds : db.jdbc_connection_string] : []
+}
+
+output "rds_connection_commands" {
+  description = "RDS 연결 명령어 목록"
+  value       = var.create_rds && length(var.rds_instances) > 0 ? [for db in module.rds : db.connection_command] : []
 } 

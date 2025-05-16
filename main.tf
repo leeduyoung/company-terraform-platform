@@ -84,4 +84,58 @@ module "bastion" {
   key_name               = var.bastion_key_name
   ssh_public_key         = var.bastion_ssh_public_key
   allowed_ssh_cidr_blocks = var.bastion_allowed_ssh_cidr_blocks
+}
+
+# RDS 모듈 호출 (조건부)
+module "rds" {
+  source   = "./modules/rds"
+  count    = var.create_rds && length(var.rds_instances) > 0 ? length(var.rds_instances) : 0
+
+  project_name              = var.project_name
+  environment               = var.environment
+  identifier                = var.rds_instances[count.index].identifier
+  vpc_id                    = module.network.vpc_id
+  subnet_ids                = module.network.private_subnet_ids # 프라이빗 서브넷에 배치
+  
+  # 보안 설정
+  allowed_security_group_ids = concat(
+    var.rds_instances[count.index].allowed_security_groups,
+    var.create_bastion ? [module.bastion[0].bastion_security_group_id] : []
+  )
+  allowed_cidr_blocks      = var.rds_instances[count.index].allowed_cidr_blocks
+  
+  # 인스턴스 설정
+  engine                   = var.rds_instances[count.index].engine
+  engine_version           = var.rds_instances[count.index].engine_version
+  instance_class           = var.rds_instances[count.index].instance_class
+  allocated_storage        = var.rds_instances[count.index].allocated_storage
+  max_allocated_storage    = var.rds_instances[count.index].max_allocated_storage
+  storage_type             = var.rds_instances[count.index].storage_type
+  storage_encrypted        = var.rds_instances[count.index].storage_encrypted
+  
+  # 데이터베이스 설정
+  db_name                  = var.rds_instances[count.index].db_name
+  username                 = var.rds_instances[count.index].username
+  password                 = var.rds_instances[count.index].password
+  port                     = var.rds_instances[count.index].port
+  
+  # 파라미터 그룹 설정
+  create_parameter_group   = var.rds_instances[count.index].create_parameter_group
+  parameter_group_family   = var.rds_instances[count.index].parameter_group_family
+  parameters               = var.rds_instances[count.index].parameters
+  
+  # 가용성 설정
+  multi_az                 = var.rds_instances[count.index].multi_az
+  publicly_accessible      = var.rds_instances[count.index].publicly_accessible
+  
+  # 백업 및 유지보수 설정
+  backup_retention_period  = var.rds_instances[count.index].backup_retention_period
+  skip_final_snapshot      = var.rds_instances[count.index].skip_final_snapshot
+  
+  # 보안 설정
+  deletion_protection      = var.rds_instances[count.index].deletion_protection
+  
+  # 모니터링 설정
+  performance_insights_enabled = var.rds_instances[count.index].performance_insights_enabled
+  enabled_cloudwatch_logs_exports = var.rds_instances[count.index].enabled_cloudwatch_logs_exports
 } 

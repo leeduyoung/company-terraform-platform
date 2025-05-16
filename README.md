@@ -14,6 +14,7 @@
 - **EKS 클러스터**: EC2 3개 노드 기반 쿠버네티스 클러스터
 - **SQS 큐**: 메시지 큐 서비스 (FIFO 및 표준 큐 지원)
 - **Bastion 서버**: 프라이빗 리소스 접근용 EC2 인스턴스 (SSH 터널링 지원)
+- **RDS 인스턴스**: 관계형 데이터베이스 서비스 (PostgreSQL, MySQL 지원)
 
 ## 모듈 구조
 
@@ -24,6 +25,7 @@
 - **EKS 모듈** (`modules/eks`): Kubernetes 클러스터 및 노드 그룹 관리
 - **SQS 모듈** (`modules/sqs`): 메시지 큐 서비스 관리
 - **Bastion 모듈** (`modules/bastion`): 프라이빗 리소스 접근용 Bastion 서버 관리
+- **RDS 모듈** (`modules/rds`): 관계형 데이터베이스 서비스 관리
 
 ## 환경별 설정
 
@@ -34,12 +36,14 @@
   - EKS는 t3.medium 인스턴스 3개 사용
   - SQS는 backend-tasks(표준) 및 notification-events(FIFO) 큐 제공
   - Bastion 서버는 t3.micro 인스턴스 사용 (누구나 SSH 접속 가능)
+  - RDS는 PostgreSQL 단일 인스턴스 사용 (t3.medium, 단일 AZ)
 - **테스트 환경** (`test.tfvars`): 2개의 가용 영역 사용
 - **프로덕션 환경** (`prod.tfvars`): 
   - 4개의 가용 영역 사용 
   - EKS는 t3.large 인스턴스 3개 사용 (최대 10개까지 확장 가능)
   - SQS는 backend-tasks(표준), notification-events(FIFO), audit-logs(표준) 큐 제공
   - Bastion 서버는 t3.micro 인스턴스 사용 (특정 IP에서만 SSH 접속 가능)
+  - RDS는 PostgreSQL 및 MySQL 다중 인스턴스 사용 (r6g.large, 다중 AZ)
 
 ## 사용 방법
 
@@ -124,18 +128,54 @@ ssh -i ~/.ssh/your-private-key.pem -L 8443:<eks-cluster-endpoint>:443 ec2-user@<
 ssh -i ~/.ssh/your-private-key.pem -L 5432:<db-private-ip>:5432 ec2-user@<bastion-public-ip>
 ```
 
-### 데이터베이스 접근 예시
+### RDS 접근 예시
 
-Bastion 서버를 통해 프라이빗 서브넷에 있는 데이터베이스에 접근하는 방법:
+Bastion 서버를 통해 RDS 데이터베이스에 접근하는 방법:
 
 1. SSH 터널 설정:
 ```bash
-ssh -i ~/.ssh/your-private-key.pem -L 5432:<db-private-ip>:5432 ec2-user@<bastion-public-ip>
+# PostgreSQL 접근 터널링
+ssh -i ~/.ssh/your-private-key.pem -L 5432:<rds-endpoint>:5432 ec2-user@<bastion-public-ip>
+
+# MySQL 접근 터널링
+ssh -i ~/.ssh/your-private-key.pem -L 3306:<rds-endpoint>:3306 ec2-user@<bastion-public-ip>
 ```
 
 2. 로컬에서 데이터베이스 클라이언트로 연결:
 ```bash
-psql -h localhost -p 5432 -U username -d dbname
+# PostgreSQL 접속
+psql -h localhost -p 5432 -U kaye_admin -d kayedb
+
+# MySQL 접속
+mysql -h localhost -P 3306 -u kaye_admin -p kayemysqldb
+```
+
+## RDS 관리 방법
+
+### RDS 인스턴스 정보 확인
+
+```bash
+# 인스턴스 엔드포인트 목록 확인
+terraform output rds_instance_endpoints
+
+# 연결 명령어 확인
+terraform output rds_connection_commands
+```
+
+### RDS 백업 및 복원
+
+AWS Management Console 또는 AWS CLI를 통해 백업 및 복원을 수행할 수 있습니다:
+
+```bash
+# 수동 스냅샷 생성
+aws rds create-db-snapshot \
+  --db-instance-identifier kaye-dev-postgres \
+  --db-snapshot-identifier manual-backup-20240101
+
+# 스냅샷에서 복원
+aws rds restore-db-instance-from-db-snapshot \
+  --db-instance-identifier kaye-dev-postgres-restored \
+  --db-snapshot-identifier manual-backup-20240101
 ```
 
 ## SQS 큐 사용 방법
@@ -200,3 +240,4 @@ aws sqs delete-message \
 - `private_subnet_cidrs`: 프라이빗 서브넷 CIDR 블록 목록
 - `sqs_queues`: SQS 큐 설정
 - `bastion_allowed_ssh_cidr_blocks`: Bastion 서버 SSH 접속 허용 IP 범위
+- `rds_instances`: RDS 인스턴스 설정
