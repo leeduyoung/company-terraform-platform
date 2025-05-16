@@ -106,7 +106,7 @@ terraform destroy -var-file="prod.tfvars"
 
 ```bash
 # 예시
-aws eks update-kubeconfig --name kaye-dev-cluster --region ap-northeast-2
+aws eks update-kubeconfig --name company-dev-cluster --region ap-northeast-2
 ```
 
 ## Bastion 서버 사용 방법
@@ -146,10 +146,10 @@ ssh -i ~/.ssh/your-private-key.pem -L 3306:<rds-endpoint>:3306 ec2-user@<bastion
 2. 로컬에서 데이터베이스 클라이언트로 연결:
 ```bash
 # PostgreSQL 접속
-psql -h localhost -p 5432 -U kaye_admin -d kayedb
+psql -h localhost -p 5432 -U company_admin -d companydb
 
 # MySQL 접속
-mysql -h localhost -P 3306 -u kaye_admin -p kayemysqldb
+mysql -h localhost -P 3306 -u company_admin -p companymysqldb
 ```
 
 ## RDS 관리 방법
@@ -171,12 +171,12 @@ AWS Management Console 또는 AWS CLI를 통해 백업 및 복원을 수행할 �
 ```bash
 # 수동 스냅샷 생성
 aws rds create-db-snapshot \
-  --db-instance-identifier kaye-dev-postgres \
+  --db-instance-identifier company-dev-postgres \
   --db-snapshot-identifier manual-backup-20240101
 
 # 스냅샷에서 복원
 aws rds restore-db-instance-from-db-snapshot \
-  --db-instance-identifier kaye-dev-postgres-restored \
+  --db-instance-identifier company-dev-postgres-restored \
   --db-snapshot-identifier manual-backup-20240101
 ```
 
@@ -189,13 +189,13 @@ AWS SQS 큐는 다음과 같이 사용할 수 있습니다:
 ```bash
 # 표준 큐에 메시지 전송
 aws sqs send-message \
-  --queue-url https://sqs.ap-northeast-2.amazonaws.com/123456789012/kaye-dev-backend-tasks \
+  --queue-url https://sqs.ap-northeast-2.amazonaws.com/123456789012/company-dev-backend-tasks \
   --message-body '{"task": "process_data", "data": {"id": 123}}' \
   --region ap-northeast-2
 
 # FIFO 큐에 메시지 전송 (MessageGroupId 필수)
 aws sqs send-message \
-  --queue-url https://sqs.ap-northeast-2.amazonaws.com/123456789012/kaye-dev-notification-events.fifo \
+  --queue-url https://sqs.ap-northeast-2.amazonaws.com/123456789012/company-dev-notification-events.fifo \
   --message-body '{"event": "user_signup", "data": {"user_id": 456}}' \
   --message-group-id "user_events" \
   --message-deduplication-id "$(date +%s)" \
@@ -207,7 +207,7 @@ aws sqs send-message \
 ```bash
 # 큐에서 메시지 수신
 aws sqs receive-message \
-  --queue-url https://sqs.ap-northeast-2.amazonaws.com/123456789012/kaye-dev-backend-tasks \
+  --queue-url https://sqs.ap-northeast-2.amazonaws.com/123456789012/company-dev-backend-tasks \
   --max-number-of-messages 10 \
   --visibility-timeout 30 \
   --wait-time-seconds 20 \
@@ -219,7 +219,7 @@ aws sqs receive-message \
 ```bash
 # 메시지 수신 후 삭제
 aws sqs delete-message \
-  --queue-url https://sqs.ap-northeast-2.amazonaws.com/123456789012/kaye-dev-backend-tasks \
+  --queue-url https://sqs.ap-northeast-2.amazonaws.com/123456789012/company-dev-backend-tasks \
   --receipt-handle "수신한 메시지의 receipt-handle 값" \
   --region ap-northeast-2
 ```
@@ -253,8 +253,8 @@ SSH 키 페어는 Bastion 서버와 EKS 노드에 접속하기 위해 사용됩�
 
 각 환경에 맞는 키 페어가 자동으로 생성되며, 환경별로 다음과 같이 구성됩니다:
 
-- **개발 환경**: `kaye-dev-key` (Bastion 서버와 EKS 노드에 동일하게 사용)
-- **프로덕션 환경**: `kaye-prod-key` (Bastion 서버와 EKS 노드에 동일하게 사용)
+- **개발 환경**: `company-dev-key` (Bastion 서버와 EKS 노드에 동일하게 사용)
+- **프로덕션 환경**: `company-prod-key` (Bastion 서버와 EKS 노드에 동일하게 사용)
 
 ### 개인 키 보안
 
@@ -263,10 +263,10 @@ Terraform은 자동으로 공개 키를 AWS에 업로드하지만, 개인 키는
 
 ```bash
 # 개발 환경의 Bastion 서버 접속
-ssh -i ~/.ssh/kaye-dev-key.pem ec2-user@<bastion-public-ip>
+ssh -i ~/.ssh/company-dev-key.pem ec2-user@<bastion-public-ip>
 
 # 프로덕션 환경의 Bastion 서버 접속
-ssh -i ~/.ssh/kaye-prod-key.pem ec2-user@<bastion-public-ip>
+ssh -i ~/.ssh/company-prod-key.pem ec2-user@<bastion-public-ip>
 ```
 
 ## RDS 고급 기능
