@@ -3,6 +3,11 @@ output "cluster_id" {
   value       = aws_eks_cluster.main.id
 }
 
+output "cluster_name" {
+  description = "EKS 클러스터 이름"
+  value       = aws_eks_cluster.main.name
+}
+
 output "cluster_arn" {
   description = "EKS 클러스터 ARN"
   value       = aws_eks_cluster.main.arn

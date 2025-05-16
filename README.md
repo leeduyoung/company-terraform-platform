@@ -268,3 +268,102 @@ ssh -i ~/.ssh/kaye-dev-key.pem ec2-user@<bastion-public-ip>
 # 프로덕션 환경의 Bastion 서버 접속
 ssh -i ~/.ssh/kaye-prod-key.pem ec2-user@<bastion-public-ip>
 ```
+
+## RDS 고급 기능
+
+RDS 모듈은 다음과 같은 고급 기능을 지원합니다:
+
+### 성능 인사이트
+
+성능 인사이트를 활성화하여 데이터베이스 성능을 모니터링할 수 있습니다:
+
+```bash
+# 성능 인사이트 대시보드 확인 (AWS Management Console)
+https://console.aws.amazon.com/rds/home?region=ap-northeast-2#performance-insights
+```
+
+### 암호화 설정
+
+RDS 인스턴스는 기본적으로 KMS 키를 사용하여 스토리지를 암호화합니다:
+
+```hcl
+# storage_encrypted = true 설정 시 자동으로 KMS 키가 생성됩니다
+# 또는 기존 KMS 키 사용:
+kms_key_id = "arn:aws:kms:ap-northeast-2:123456789012:key/abcd1234-ef56-gh78-ij90-klmn1234pqrs"
+```
+
+### 파라미터 그룹 설정
+
+데이터베이스 엔진별 파라미터를 설정할 수 있습니다:
+
+```hcl
+# PostgreSQL 파라미터 예시
+parameters = [
+  {
+    name  = "max_connections"
+    value = "100"
+  },
+  {
+    name  = "shared_buffers"
+    value = "{DBInstanceClassMemory/32768}"
+  }
+]
+```
+
+## 암호화 및 보안
+
+이 프로젝트의 모든 컴포넌트는 보안을 고려하여 설계되었습니다:
+
+### 데이터 암호화
+
+- **저장 데이터(Data at Rest)**: RDS 스토리지 및 EBS 볼륨 암호화
+- **전송 중 데이터(Data in Transit)**: TLS/SSL을 통한 통신 암호화
+- **SQS 메시지**: KMS 키를 사용한 메시지 암호화
+
+### 보안 그룹 설정
+
+모든 보안 그룹은 최소 권한 원칙을 따라 구성됩니다:
+
+- **Bastion**: 지정된 IP 범위에서만 SSH(22) 접근 허용
+- **RDS**: VPC 내부 또는 특정 보안 그룹에서만 데이터베이스 포트 접근 허용
+- **EKS**: 컨트롤 플레인과 워커 노드 간 필요한 통신만 허용
+
+### 민감 정보 관리
+
+프로덕션 환경에서는 다음과 같은 방법으로 민감 정보를 관리하는 것을 권장합니다:
+
+- AWS Secrets Manager 사용
+- AWS Systems Manager Parameter Store 사용
+- HashiCorp Vault 사용
+
+## Makefile 사용 방법
+
+프로젝트 루트에 있는 Makefile을 사용하여 일반적인 작업을 간소화할 수 있습니다:
+
+```bash
+# 테라폼 초기화
+make init
+
+# 개발 환경 계획 확인
+make plan-dev
+
+# 프로덕션 환경 계획 확인
+make plan-prod
+
+# 개발 환경 배포
+make apply-dev
+
+# 프로덕션 환경 배포
+make apply-prod
+
+# 개발 환경 삭제
+make destroy-dev
+
+# 테라폼 포맷 검사
+make fmt-check
+
+# 테라폼 검증
+make validate
+```
+
+Makefile에는 이 외에도 다양한 편의 기능이 포함되어 있으니 `make help` 명령을 통해 사용 가능한 모든 명령을 확인하세요.

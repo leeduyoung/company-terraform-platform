@@ -134,6 +134,6 @@ resource "aws_db_instance" "main" {
 
   # 라이프사이클
   lifecycle {
-    prevent_destroy = var.prevent_destroy
+    prevent_destroy = false
   }
 } 

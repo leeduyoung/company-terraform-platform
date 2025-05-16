@@ -1,6 +1,7 @@
 # SQS 큐 생성
 resource "aws_sqs_queue" "main" {
-  name                       = "${var.project_name}-${var.queue_name}"
+  # FIFO 큐인 경우 .fifo 접미사 자동 추가
+  name                       = var.fifo_queue ? "${var.project_name}-${var.queue_name}.fifo" : "${var.project_name}-${var.queue_name}"
   delay_seconds              = var.delay_seconds
   max_message_size           = var.max_message_size
   message_retention_seconds  = var.message_retention_seconds
@@ -9,21 +10,15 @@ resource "aws_sqs_queue" "main" {
   fifo_queue                 = var.fifo_queue
   content_based_deduplication = var.content_based_deduplication
 
-  # FIFO 큐인 경우 .fifo 접미사 자동 추가
-  name = var.fifo_queue ? "${var.project_name}-${var.queue_name}.fifo" : "${var.project_name}-${var.queue_name}"
-
   # 암호화 설정
   kms_master_key_id                 = var.kms_master_key_id
   kms_data_key_reuse_period_seconds = var.kms_key_reuse_seconds
 
   # 데드 레터 큐 설정 (옵션)
-  dynamic "redrive_policy" {
-    for_each = var.dead_letter_queue_arn != "" ? [1] : []
-    content {
-      deadLetterTargetArn = var.dead_letter_queue_arn
-      maxReceiveCount     = var.max_receive_count
-    }
-  }
+  redrive_policy = var.dead_letter_queue_arn != "" ? jsonencode({
+    deadLetterTargetArn = var.dead_letter_queue_arn
+    maxReceiveCount     = var.max_receive_count
+  }) : null
 
   tags = {
     Name        = "${var.project_name}-${var.queue_name}"
